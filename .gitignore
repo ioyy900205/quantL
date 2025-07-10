@@ -78,7 +78,7 @@ venv.bak/
 dmypy.json
 
 # 项目特定
-data/
+/data/
 logs/
 outputs/
 *.log
