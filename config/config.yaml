@@ -1,0 +1,117 @@
+# 量化分析项目配置文件
+
+# 数据源配置
+data_source:
+  # akshare配置
+  akshare:
+    timeout: 30
+    retry_times: 3
+    
+  # 数据存储路径
+  data_paths:
+    raw_data: "data/raw"
+    processed_data: "data/processed"
+    cache_data: "data/cache"
+    
+  # 数据更新频率
+  update_frequency: "daily"  # daily, weekly, monthly
+
+# 股票池配置
+stock_pool:
+  # 默认股票池
+  default:
+    - "000001"  # 平安银行
+    - "000002"  # 万科A
+    - "000858"  # 五粮液
+    - "002415"  # 海康威视
+    - "600036"  # 招商银行
+    - "600519"  # 贵州茅台
+    - "600887"  # 伊利股份
+    - "000858"  # 五粮液
+    
+  # 行业分类
+  industries:
+    banking: ["000001", "600036", "601398"]
+    technology: ["002415", "000725", "002230"]
+    consumer: ["600519", "000858", "600887"]
+
+# 技术指标参数
+technical_indicators:
+  # 移动平均线
+  ma:
+    short_period: 5
+    long_period: 20
+    
+  # MACD
+  macd:
+    fast_period: 12
+    slow_period: 26
+    signal_period: 9
+    
+  # RSI
+  rsi:
+    period: 14
+    overbought: 70
+    oversold: 30
+    
+  # 布林带
+  bollinger:
+    period: 20
+    std_dev: 2
+
+# 策略配置
+strategy:
+  # 双均线策略
+  dual_ma:
+    short_ma: 5
+    long_ma: 20
+    position_size: 0.1
+    
+  # 动量策略
+  momentum:
+    lookback_period: 20
+    threshold: 0.05
+    
+  # 均值回归策略
+  mean_reversion:
+    lookback_period: 60
+    std_dev_threshold: 2.0
+
+# 回测配置
+backtest:
+  # 回测时间范围
+  start_date: "2020-01-01"
+  end_date: "2023-12-31"
+  
+  # 初始资金
+  initial_capital: 1000000
+  
+  # 交易成本
+  commission: 0.0003  # 万三手续费
+  slippage: 0.0001    # 滑点
+  
+  # 风险控制
+  max_position_size: 0.2  # 单只股票最大仓位
+  stop_loss: 0.1          # 止损比例
+
+# 可视化配置
+visualization:
+  # 图表样式
+  style: "seaborn-v0_8"
+  figure_size: [12, 8]
+  
+  # 颜色主题
+  colors:
+    primary: "#1f77b4"
+    secondary: "#ff7f0e"
+    success: "#2ca02c"
+    danger: "#d62728"
+    
+  # 保存路径
+  save_path: "outputs/figures"
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/quantl.log" 
