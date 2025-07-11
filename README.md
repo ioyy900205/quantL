@@ -146,8 +146,8 @@ class MyStrategy(BaseStrategy):
 ## 📞 联系方式
 
 ### 项目维护者
-- **姓名**: 刘亮
-- **邮箱**: liuliang@gpu22.unidev.ai
+- **姓名**: liuliang
+- **邮箱**: ioyy900205@gmail.com
 - **GitHub**: [@ioyy900205](https://github.com/ioyy900205)
 
 ### 交流渠道
