@@ -318,6 +318,210 @@ class DataDownloader:
             logger.error(f"获取股票列表失败: {e}")
             return pd.DataFrame()
     
+    def download_financial_statement(
+        self,
+        stock_code: str,
+        statement_type: str = "indicator"
+    ) -> pd.DataFrame:
+        """
+        下载财务数据
+        
+        Args:
+            stock_code: 股票代码
+            statement_type: 报表类型 (indicator: 主要指标)
+            
+        Returns:
+            财务数据DataFrame
+        """
+        try:
+            logger.info(f"开始下载财务数据: {stock_code}, 类型: {statement_type}")
+            
+            if statement_type == "indicator":
+                # 下载主要财务指标
+                df = ak.stock_financial_analysis_indicator(symbol=stock_code)
+            else:
+                logger.error(f"不支持的报表类型: {statement_type}")
+                return pd.DataFrame()
+            
+            if df.empty:
+                logger.warning(f"股票 {stock_code} 的{statement_type}数据为空")
+                return pd.DataFrame()
+
+            # 重命名和设置索引
+            if "日期" in df.columns:
+                df = df.rename(columns={"日期": "date"})
+                df['date'] = pd.to_datetime(df['date'])
+                df.set_index('date', inplace=True)
+            
+            # 保存数据
+            filename = f"{stock_code}_{statement_type}.csv"
+            self._save_data(df, filename, "raw")
+            
+            logger.info(f"财务数据下载完成: {stock_code}, 数据量: {len(df)}")
+            return df
+            
+        except Exception as e:
+            logger.error(f"下载财务数据失败: {stock_code}, 错误: {e}")
+            return pd.DataFrame()
+    
+    def download_valuation_indicators(
+        self,
+        stock_code: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        下载估值指标数据
+        
+        Args:
+            stock_code: 股票代码
+            start_date: 开始日期
+            end_date: 结束日期
+            
+        Returns:
+            估值指标数据DataFrame
+        """
+        try:
+            logger.info(f"开始下载估值指标: {stock_code}")
+            
+            if not start_date:
+                start_date = "2020-01-01"
+            if not end_date:
+                end_date = datetime.now().strftime("%Y-%m-%d")
+            
+            # 下载估值指标
+            df = ak.stock_zh_a_lg_indicator(symbol=stock_code)
+            
+            if df.empty:
+                logger.warning(f"股票 {stock_code} 的估值指标数据为空")
+                return pd.DataFrame()
+            
+            # 过滤日期范围
+            df['trade_date'] = pd.to_datetime(df['trade_date'])
+            df = df[(df['trade_date'] >= start_date) & (df['trade_date'] <= end_date)]
+            
+            # 设置日期索引
+            df.set_index('trade_date', inplace=True)
+            
+            # 保存数据
+            self._save_data(df, f"{stock_code}_valuation.csv", "raw")
+            
+            logger.info(f"估值指标下载完成: {stock_code}, 数据量: {len(df)}")
+            return df
+            
+        except Exception as e:
+            logger.error(f"下载估值指标失败: {stock_code}, 错误: {e}")
+            return pd.DataFrame()
+    
+    def download_industry_classification(self) -> pd.DataFrame:
+        """
+        下载行业分类数据
+        
+        Returns:
+            行业分类数据DataFrame
+        """
+        try:
+            logger.info("开始下载行业分类数据")
+            
+            # 获取申万行业分类
+            df = ak.stock_board_industry_name_em()
+            
+            if df.empty:
+                logger.warning("行业分类数据为空")
+                return pd.DataFrame()
+            
+            # 保存数据
+            self._save_data(df, "industry_classification.csv", "cache")
+            
+            logger.info(f"行业分类下载完成, 数量: {len(df)}")
+            return df
+            
+        except Exception as e:
+            logger.error(f"下载行业分类失败: {e}")
+            return pd.DataFrame()
+    
+    def download_stock_industry_info(self, stock_code: str) -> Dict[str, Any]:
+        """
+        下载个股行业信息
+        
+        Args:
+            stock_code: 股票代码
+            
+        Returns:
+            行业信息字典
+        """
+        try:
+            logger.info(f"开始下载个股行业信息: {stock_code}")
+            
+            # 获取个股行业信息
+            df = ak.stock_individual_info_em(symbol=stock_code)
+            
+            if df.empty:
+                logger.warning(f"股票 {stock_code} 的行业信息为空")
+                return {}
+            
+            # 转换为字典格式
+            info_dict = {}
+            for _, row in df.iterrows():
+                info_dict[row.iloc[0]] = row.iloc[1]
+            
+            # 保存数据
+            self._save_data(df, f"{stock_code}_industry_info.csv", "raw")
+            
+            logger.info(f"个股行业信息下载完成: {stock_code}")
+            return info_dict
+            
+        except Exception as e:
+            logger.error(f"下载个股行业信息失败: {stock_code}, 错误: {e}")
+            return {}
+    
+    def download_fundamental_batch(
+        self,
+        stock_codes: List[str],
+        data_types: List[str] = None
+    ) -> Dict[str, Dict[str, pd.DataFrame]]:
+        """
+        批量下载基本面数据
+        
+        Args:
+            stock_codes: 股票代码列表
+            data_types: 数据类型列表 (financial, valuation, industry)
+            
+        Returns:
+            基本面数据字典
+        """
+        if data_types is None:
+            data_types = ["financial", "valuation", "industry"]
+        
+        results = {}
+        
+        for i, stock_code in enumerate(stock_codes):
+            logger.info(f"\n基本面数据下载进度: {i+1}/{len(stock_codes)} - {stock_code}")
+            
+            stock_data = {}
+            
+            # 下载财务报表
+            if "financial" in data_types:
+                df = self.download_financial_statement(stock_code, statement_type="indicator")
+                if not df.empty:
+                    stock_data["financial_indicator"] = df
+            
+            # 下载估值指标 (此功能已合并到财务指标中)
+            
+            # 下载行业信息
+            if "industry" in data_types:
+                industry_info = self.download_stock_industry_info(stock_code)
+                if industry_info:
+                    stock_data["industry"] = industry_info
+            
+            if stock_data:
+                results[stock_code] = stock_data
+            
+            # 避免请求过于频繁
+            time.sleep(1)
+        
+        return results
+    
     def _save_data(self, df: pd.DataFrame, filename: str, data_type: str = "raw"):
         """
         保存数据到文件

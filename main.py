@@ -34,15 +34,27 @@ def download_data():
     stock_data = downloader.download_stock_batch(
         stock_codes=stock_pool,
         start_date="2020-01-01",
-        end_date="2023-12-31"
+        end_date="2023-12-31",
+        period="daily",  # 可选: daily, weekly, monthly
+        adjust="qfq"     # 可选: qfq(前复权), hfq(后复权), ""(不复权)
     )
     
     # 下载指数数据作为基准
     benchmark_data = downloader.download_index_data("000300")  # 沪深300
     
-    logger.info(f"数据下载完成: {len(stock_data)} 只股票")
+    # 下载基本面数据
+    logger.info("开始下载基本面数据...")
+    fundamental_data = downloader.download_fundamental_batch(
+        stock_codes=stock_pool,
+        data_types=["financial", "valuation", "industry"]  # 可选: financial, valuation, industry
+    )
     
-    return stock_data, benchmark_data
+    # 下载行业分类数据
+    industry_data = downloader.download_industry_classification()
+    
+    logger.info(f"数据下载完成: {len(stock_data)} 只股票, {len(fundamental_data)} 只基本面数据")
+    
+    return stock_data, benchmark_data, fundamental_data, industry_data
 
 
 def analyze_data(stock_data):
@@ -167,6 +179,7 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description="量化分析项目")
     parser.add_argument("--download", action="store_true", help="下载数据")
+    parser.add_argument("--fundamental", action="store_true", help="下载基本面数据")
     parser.add_argument("--analyze", action="store_true", help="技术分析")
     parser.add_argument("--strategy", action="store_true", help="运行策略")
     parser.add_argument("--backtest", action="store_true", help="运行回测")
@@ -178,9 +191,20 @@ def main():
     try:
         if args.all or args.download:
             # 下载数据
-            stock_data, benchmark_data = download_data()
-        else:
+            stock_data, benchmark_data, fundamental_data, industry_data = download_data()
+        elif args.fundamental:
+            # 只下载基本面数据
+            logger.info("开始下载基本面数据...")
+            stock_pool = config.get_stock_pool("default")
+            fundamental_data = downloader.download_fundamental_batch(
+                stock_codes=stock_pool,
+                data_types=["financial", "valuation", "industry"]
+            )
+            industry_data = downloader.download_industry_classification()
             stock_data, benchmark_data = {}, {}
+            logger.info(f"基本面数据下载完成: {len(fundamental_data)} 只股票")
+        else:
+            stock_data, benchmark_data, fundamental_data, industry_data = {}, {}, {}, {}
         
         if args.all or args.analyze:
             # 分析数据
@@ -213,7 +237,7 @@ def main():
             logger.info("运行完整量化分析流程...")
             
             # 下载数据
-            stock_data, benchmark_data = download_data()
+            stock_data, benchmark_data, fundamental_data, industry_data = download_data()
             
             # 分析数据
             analyzed_data = analyze_data(stock_data)

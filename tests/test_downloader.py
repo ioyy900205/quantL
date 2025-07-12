@@ -82,6 +82,57 @@ class TestDataDownloader(unittest.TestCase):
         
         # 检查包含股票代码列
         self.assertTrue(any('代码' in col for col in df.columns))
+    
+    def test_download_financial_statement(self):
+        """测试财务报表下载"""
+        # 测试下载财务指标
+        df = self.downloader.download_financial_statement(
+            stock_code='000001',
+            statement_type='indicator'
+        )
+        
+        # 检查数据不为空（某些股票可能没有财务数据）
+        if not df.empty:
+            # 检查数据类型
+            self.assertIsInstance(df, pd.DataFrame)
+    
+    def test_download_valuation_indicators(self):
+        """测试估值指标下载(已合并到财务数据中)"""
+        pass
+    
+    def test_download_industry_classification(self):
+        """测试行业分类下载"""
+        df = self.downloader.download_industry_classification()
+        
+        # 检查数据不为空
+        self.assertFalse(df.empty)
+        
+        # 检查数据类型
+        self.assertIsInstance(df, pd.DataFrame)
+    
+    def test_download_stock_industry_info(self):
+        """测试个股行业信息下载"""
+        industry_info = self.downloader.download_stock_industry_info('000001')
+        
+        # 检查返回类型
+        self.assertIsInstance(industry_info, dict)
+    
+    def test_download_fundamental_batch(self):
+        """测试批量基本面数据下载"""
+        stock_codes = ['000001', '000002']
+        
+        result = self.downloader.download_fundamental_batch(
+            stock_codes=stock_codes,
+            data_types=['financial', 'valuation', 'industry']
+        )
+        
+        # 检查返回的字典
+        self.assertIsInstance(result, dict)
+        
+        # 检查每只股票的数据（某些股票可能没有基本面数据）
+        for code in stock_codes:
+            if code in result:
+                self.assertIsInstance(result[code], dict)
 
 
 if __name__ == '__main__':

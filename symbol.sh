@@ -1,1 +1,0 @@
-find . -type l -exec bash -c 'for link; do target=$(readlink "$link"); [ -f "$target" ] && cp --remove-destination "$target" "$link"; done' _ {} +
